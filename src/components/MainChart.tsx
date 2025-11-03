@@ -1,24 +1,49 @@
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { getFilterOptions, calculateMonthlyAverageRsp } from '../lib/fuel-data-helpers';
 import FuelPriceChart from './FuelPriceChart';
 import { EChartsOption } from 'echarts';
 
-const filterOptions = getFilterOptions();
-
 export default function MainChart() {
-  const [city, setCity] = useState(filterOptions.cities[0]);
-  const [product, setProduct] = useState(filterOptions.products[0]);
-  const [year, setYear] = useState(filterOptions.years[0]);
+  const [filterOptions, setFilterOptions] = useState<{
+    cities: string[];
+    products: string[];
+    years: number[];
+  }>({ cities: [], products: [], years: [] });
+  
+  const [city, setCity] = useState('');
+  const [product, setProduct] = useState('');
+  const [year, setYear] = useState<number>(0);
   const [chartOption, setChartOption] = useState<EChartsOption>({});
+  const [loading, setLoading] = useState(true);
+  const [monthlyData, setMonthlyData] = useState<{ months: string[]; averages: number[] }>({
+    months: [],
+    averages: []
+  });
 
-  const monthlyData = useMemo(() => {
+  // Load filter options on mount
+  useEffect(() => {
+    getFilterOptions().then(options => {
+      setFilterOptions(options);
+      setCity(options.cities[0] || '');
+      setProduct(options.products[0] || '');
+      setYear(options.years[0] || 0);
+      setLoading(false);
+    });
+  }, []);
+
+  // Load monthly data when filters change
+  useEffect(() => {
     if (!city || !product || !year) {
-        return { months: [], averages: [] };
+      setMonthlyData({ months: [], averages: [] });
+      return;
     }
-    return calculateMonthlyAverageRsp(city, product, year);
+    
+    calculateMonthlyAverageRsp(city, product, year).then(data => {
+      setMonthlyData(data);
+    });
   }, [city, product, year]);
 
   useEffect(() => {
@@ -76,6 +101,26 @@ export default function MainChart() {
     };
     setChartOption(newOption);
   }, [monthlyData, city, product, year]);
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4 sm:p-8 font-body">
+        <Card className="w-full max-w-5xl shadow-lg rounded-xl">
+          <CardHeader>
+            <CardTitle className="text-3xl font-headline text-center text-primary">FuelVis</CardTitle>
+            <CardDescription className="text-center">
+              Retail Selling Price (RSP) of Petrol and Diesel in Metro Cities
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center h-[60vh]">
+              <p className="text-lg text-muted-foreground">Loading data...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4 sm:p-8 font-body">
