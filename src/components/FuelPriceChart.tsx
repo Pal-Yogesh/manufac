@@ -1,14 +1,11 @@
 
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts/core';
-import { BarChart, type BarSeriesOption } from 'echarts/charts';
+import { BarChart } from 'echarts/charts';
 import {
   TitleComponent,
-  type TitleComponentOption,
   TooltipComponent,
-  type TooltipComponentOption,
   GridComponent,
-  type GridComponentOption,
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import type { EChartsOption } from 'echarts';
